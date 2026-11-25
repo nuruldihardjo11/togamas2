@@ -447,7 +447,7 @@ img.qr,canvas.qr{display:block;margin:0 auto;background:#fff;border-radius:4px;m
   <section class="page" id="page-antrian">
     <div class="card">
       <div class="card-title">Antrian Print Pelanggan</div>
-      <p class="card-sub">File yang dikirim pelanggan via QR Code akan muncul di sini. Kasir dapat membuka file, mencetak, dan menandai status.</p>
+      <p class="card-sub">File yang dikirim pelanggan via QR Code muncul di sini. Klik Selesai setelah mencetak: antrian terhapus dan transaksi print otomatis masuk ke kasir.</p>
 
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.1rem">
         <button class="btn btn-blue" onclick="loadAntrian()">Muat Ulang</button>
@@ -680,7 +680,7 @@ const TEAM = [
    KONFIGURASI DATABASE & URL
    ========================================================= */
 /* Isi SCRIPT_URL dengan URL Web App Apps Script Anda (berakhiran /exec). */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5FzcNlszVp9iS8F32DLOPvk1hxNeA6_r1dJppr5E9rXnMi-u7zGD29mgNmsoJmnotJA/exec';
+const SCRIPT_URL = '';
 
 let barang = load('tm_barang') || structuredClone(DEFAULT_BARANG);
 let transaksi = load('tm_transaksi') || structuredClone(DEFAULT_TRX);
@@ -914,21 +914,26 @@ async function loadAntrian(){
 function renderAntrian(){
   const list = document.getElementById('antrianList');
   const badge = document.getElementById('antrianBadge');
-  const waiting = antrianData.filter(a=>a.status==='Menunggu').length;
+  /* Entri berstatus Selesai / Dihapus tidak ditampilkan lagi */
+  const visible = antrianData.filter(function(a){
+    const s = a.status || 'Menunggu';
+    return s !== 'Selesai' && s !== 'Dihapus';
+  });
+  const waiting = visible.filter(a=>(a.status||'Menunggu')==='Menunggu').length;
   if(badge){
     if(waiting>0){ badge.style.display='inline'; badge.textContent=waiting; }
     else{ badge.style.display='none'; }
   }
-  if(!antrianData.length){
+  if(!visible.length){
     list.innerHTML = '<p style="color:var(--text-2);text-align:center;padding:2rem">Belum ada file masuk. Tempel QR Print di toko agar pelanggan bisa mengirim file.</p>';
     return;
   }
-  const sorted = antrianData.slice().sort((a,b)=>{
-    const order = {'Menunggu':0,'Diproses':1,'Selesai':2,'Dibatalkan':3};
+  const sorted = visible.slice().sort((a,b)=>{
+    const order = {'Menunggu':0,'Diproses':1};
     return (order[a.status]||9) - (order[b.status]||9);
   });
   list.innerHTML = sorted.map(a=>{
-    const cls = a.status==='Selesai'?'selesai':a.status==='Diproses'?'diproses':'';
+    const cls = (a.status||'')==='Diproses'?'diproses':'';
     const ext = (a.nama_file||'').split('.').pop().toUpperCase().substring(0,4);
     const acts = a.url_drive
       ? '<a class="btn btn-blue btn-sm" href="'+esc(a.url_drive)+'" target="_blank">Buka File</a>'
@@ -945,24 +950,64 @@ function renderAntrian(){
         '<span class="status-pill status-'+(a.status||'Menunggu')+'">'+(a.status||'Menunggu')+'</span>'+
         acts+
         '<div style="display:flex;gap:.3rem;flex-wrap:wrap">'+
-          '<button class="btn btn-soft btn-sm" onclick="updateAntrianStatus(\''+esc(a.id)+'\',\'Diproses\')">Diproses</button>'+
-          '<button class="btn btn-blue btn-sm" onclick="updateAntrianStatus(\''+esc(a.id)+'\',\'Selesai\')">Selesai</button>'+
-          '<button class="btn btn-ghost btn-sm" onclick="updateAntrianStatus(\''+esc(a.id)+'\',\'Dibatalkan\')">Batal</button>'+
+          '<button class="btn btn-blue btn-sm" onclick="selesaiAntrian(\''+esc(a.id)+'\')">Selesai</button>'+
+          '<button class="btn btn-deep btn-sm" onclick="hapusAntrian(\''+esc(a.id)+'\')">Hapus</button>'+
         '</div>'+
       '</div>'+
     '</div>';
   }).join('');
 }
-async function updateAntrianStatus(id,status){
+/* Selesai: antrian terhapus otomatis + transaksi print masuk ke kasir */
+async function selesaiAntrian(id){
+  const a = antrianData.find(x=>x.id===id);
+  if(!a){ toast('Antrian tidak ditemukan','err'); return; }
+  if(!confirm('Selesaikan antrian '+id+'? Antrian akan terhapus dan transaksi print masuk ke kasir.')) return;
+  /* 1) Catat transaksi ke kasir (harga per copy mengikuti Jasa Print Dokumen JSA002) */
+  const jasa = barang.find(b=>b.kode==='JSA002') || {kode:'JSA002',nama:'Jasa Print Dokumen',harga:1000};
+  const jumlah = Math.max(1, parseInt(a.jumlah_copy)||1);
+  const harga = Number(jasa.harga)||1000;
+  const subtotal = jumlah * harga;
+  const trxId = 'TRX'+String(trxCounter++).padStart(3,'0');
+  const jam = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  transaksi.push({id:trxId,tanggal:TODAY,total:subtotal,jam:jam});
+  const nextId = detailTransaksi.reduce((m,d)=>Math.max(m,d.id),0)+1;
+  detailTransaksi.push({id:nextId,id_transaksi:trxId,kode_barang:jasa.kode,jumlah:jumlah,harga:harga,subtotal:subtotal});
+  save();
+  renderHistory();
+  /* 2) Hapus antrian */
   try{
     if(SCRIPT_URL){
-      const res = await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'updateAntrian',id:id,status:status})}).then(r=>r.json());
-      if(res && res.ok){ toast('Status diperbarui: '+status); loadAntrian(); return; }
+      await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'updateAntrian',id:id,status:'Selesai'})}).then(r=>r.json());
+      await loadAntrian();
+    }else{
+      const arr = load('tm_antrian') || [];
+      const idx = arr.findIndex(x=>x.id===id);
+      if(idx>-1) arr.splice(idx,1);
+      localStorage.setItem('tm_antrian', JSON.stringify(arr));
+      antrianData = arr;
+      renderAntrian();
+    }
+    toast('Antrian '+id+' selesai. Transaksi '+trxId+' ('+rp(subtotal)+') masuk ke kasir.');
+  }catch(e){
+    toast('Transaksi tersimpan, tetapi antrian gagal diperbarui','err');
+  }
+}
+/* Hapus: antrian hilang tanpa mencatat transaksi */
+async function hapusAntrian(id){
+  if(!confirm('Hapus antrian '+id+' tanpa mencatat transaksi?')) return;
+  try{
+    if(SCRIPT_URL){
+      const res = await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'updateAntrian',id:id,status:'Dihapus'})}).then(r=>r.json());
+      if(res && res.ok){ await loadAntrian(); toast('Antrian '+id+' dihapus'); return; }
     }
     const arr = load('tm_antrian') || [];
-    const item = arr.find(x=>x.id===id);
-    if(item){ item.status = status; localStorage.setItem('tm_antrian', JSON.stringify(arr)); toast('Status diperbarui: '+status); loadAntrian(); }
-  }catch(e){ toast('Gagal update status','err'); }
+    const idx = arr.findIndex(x=>x.id===id);
+    if(idx>-1) arr.splice(idx,1);
+    localStorage.setItem('tm_antrian', JSON.stringify(arr));
+    antrianData = arr;
+    renderAntrian();
+    toast('Antrian '+id+' dihapus');
+  }catch(e){ toast('Gagal menghapus antrian','err'); }
 }
 
 /* =========================================================
