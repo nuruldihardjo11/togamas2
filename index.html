@@ -63,6 +63,12 @@ button,input,select{font-family:inherit}
 .theme-toggle,.hamburger{background:var(--bg-soft);border:1px solid var(--border);color:var(--text);height:38px;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700}
 .theme-toggle{width:78px}
 .hamburger{display:none;width:44px;font-size:1.2rem}
+/* Indikator status database */
+.db-chip{padding:.4rem .75rem;border:1px solid var(--border);border-radius:999px;font-size:.78rem;font-weight:700;color:var(--text-2);background:var(--bg-soft);white-space:nowrap}
+.db-chip.on{color:var(--blue-dark);border-color:var(--blue);background:var(--blue-soft)}
+.db-chip.off{color:#B4232A;border-color:#B4232A;background:#FDECEC}
+[data-theme="dark"] .db-chip.on{background:#10294A;color:#8CC4FF}
+[data-theme="dark"] .db-chip.off{background:#3A1518;color:#FCA5A5}
 
 /* ===================== LAYOUT ===================== */
 .main-content{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 2rem}
@@ -298,6 +304,7 @@ img.qr,canvas.qr{display:block;margin:0 auto;background:#fff;border-radius:4px;m
       <a href="#" data-page="dss" onclick="go('dss');return false">DSS</a>
       <a href="#" data-page="databarang" onclick="go('databarang');return false">Data Barang</a>
       <a href="#" data-page="profil" onclick="go('profil');return false">Profil Pembuat</a>
+      <span class="db-chip" id="dbStatus" title="Status database">DB: Lokal</span>
       <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">Mode Gelap</button>
     </div>
   </div>
@@ -589,6 +596,11 @@ const TEAM = [
 ];
 
 /* ===================== STATE ===================== */
+/* === DATABASE GOOGLE SHEETS (POLA 2) ===
+   Isi SCRIPT_URL dengan URL Web App Apps Script Anda (berakhiran /exec).
+   Biarkan '' untuk mode offline (data hanya di localStorage perangkat). */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbybcxE6uUVfbKGtmSaGuuPeaeyOi7iTXLKiTKf_Y_cr-LHlomWISADBDHJz8329f1d1UQ/exec';
+
 let barang = load('tm_barang') || structuredClone(DEFAULT_BARANG);
 let transaksi = load('tm_transaksi') || structuredClone(DEFAULT_TRX);
 let detailTransaksi = load('tm_detail') || structuredClone(DEFAULT_DETAIL);
@@ -596,13 +608,97 @@ let cart = [];
 let trxCounter = transaksi.reduce((m,t)=>Math.max(m,parseInt(t.id.replace(/\D/g,''))||0),0)+1;
 
 function load(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null }catch(e){ return null } }
-function save(){
+function saveLocal(){
   localStorage.setItem('tm_barang',JSON.stringify(barang));
   localStorage.setItem('tm_transaksi',JSON.stringify(transaksi));
   localStorage.setItem('tm_detail',JSON.stringify(detailTransaksi));
 }
+function save(){
+  saveLocal();
+  sheetPush();
+  updateDbBadge();
+}
 const rp = n => 'Rp ' + Number(n||0).toLocaleString('id-ID');
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ===================== SINKRONISASI GOOGLE SHEETS ===================== */
+let sheetOnline = false;
+let pushTimer = null;
+
+function num(v,d){ v = Number(v); return isFinite(v) ? v : (d||0); }
+function normalizeBarang(arr){
+  return (arr||[]).map(function(b,i){
+    return {
+      kode: String(b.kode||'').trim() || ('BRG'+i),
+      nama: String(b.nama||''),
+      kategori: String(b.kategori||'Minuman'),
+      harga: num(b.harga),
+      stok: num(b.stok),
+      barcode: (b.barcode===0||b.barcode) ? String(b.barcode) : '',
+      tipeKode: String(b.tipeKode||'').toUpperCase()==='QR' ? 'QR' : 'BARCODE'
+    };
+  });
+}
+function normalizeTrx(arr){
+  return (arr||[]).map(function(t){
+    return { id:String(t.id||''), tanggal:String(t.tanggal||TODAY), total:num(t.total), jam:String(t.jam||'') };
+  });
+}
+function normalizeDetail(arr){
+  return (arr||[]).map(function(d){
+    return { id:num(d.id), id_transaksi:String(d.id_transaksi||''), kode_barang:String(d.kode_barang||''), jumlah:num(d.jumlah), harga:num(d.harga), subtotal:num(d.subtotal) };
+  });
+}
+function updateDbBadge(){
+  const el = document.getElementById('dbStatus');
+  if(!el) return;
+  if(!SCRIPT_URL){ el.className='db-chip'; el.textContent='DB: Lokal'; el.title='Mode offline: data tersimpan di localStorage perangkat ini.'; return; }
+  if(sheetOnline){ el.className='db-chip on'; el.textContent='DB: Sheets Online'; el.title='Terhubung ke Google Sheets sebagai database.'; }
+  else{ el.className='db-chip off'; el.textContent='DB: Sheets Terputus'; el.title='Tidak dapat menghubungi Google Sheets; memakai data lokal.'; }
+}
+function sheetPush(){
+  if(!SCRIPT_URL) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(function(){
+    fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'setAll',barang:barang,transaksi:transaksi,detail:detailTransaksi})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ sheetOnline = !!(res && res.ok); updateDbBadge(); })
+      .catch(function(){ sheetOnline=false; updateDbBadge(); });
+  },700);
+}
+function sheetPull(cb){
+  if(!SCRIPT_URL){ cb && cb(false); return; }
+  fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'getAll'})})
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res && res.ok){
+        const remoteEmpty = !(res.barang&&res.barang.length) && !(res.transaksi&&res.transaksi.length) && !(res.detail&&res.detail.length);
+        if(remoteEmpty){
+          sheetOnline = true;
+          sheetPush(); // isi Sheets pertama kali dengan data lokal
+        }else{
+          barang = normalizeBarang(res.barang);
+          transaksi = normalizeTrx(res.transaksi);
+          detailTransaksi = normalizeDetail(res.detail);
+          ensureCodes();
+          trxCounter = transaksi.reduce((m,t)=>Math.max(m,parseInt(String(t.id).replace(/\D/g,''))||0),0)+1;
+          sheetOnline = true;
+          saveLocal();
+        }
+        cb && cb(true);
+      }else{ sheetOnline=false; cb && cb(false); }
+    })
+    .catch(function(){ sheetOnline=false; cb && cb(false); });
+}
+function refreshAll(){
+  renderKasirSelect(); renderCart(); renderHistory();
+  const act = (document.querySelector('.page.active')||{id:'page-beranda'}).id.replace('page-','');
+  if(act==='laporan') renderLaporan();
+  if(act==='dss') renderDSS();
+  if(act==='databarang') renderDataTable();
+  if(act==='profil') renderTeam();
+}
 
 /* ===================== KODE: BARCODE & QR ===================== */
 function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0 } return h }
@@ -1115,11 +1211,20 @@ function renderTeam(){
 }
 
 /* ===================== INIT ===================== */
-save();
+saveLocal();
 renderTeam();
 renderKasirSelect();
 renderCart();
 renderHistory();
+updateDbBadge();
+sheetPull(function(ok){
+  if(SCRIPT_URL){
+    if(ok) toast('Terhubung ke Google Sheets: data dimuat dari database online.');
+    else toast('Gagal menghubungi Google Sheets: memakai data lokal sementara.','err');
+  }
+  refreshAll();
+  updateDbBadge();
+});
 </script>
 </body>
 </html>
