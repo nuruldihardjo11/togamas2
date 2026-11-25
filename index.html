@@ -12,6 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <style>
 :root{
   --white:#FFFFFF;--blue:#007BFF;--blue-dark:#0056B3;--blue-deep:#003D82;
@@ -55,6 +56,8 @@ body.nav-locked .nav-restricted{display:none!important}
 .guest-field textarea{min-height:70px;resize:vertical}
 .guest-field input:focus,.guest-field select:focus,.guest-field textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,123,255,.12)}
 .guest-note{font-size:.78rem;color:var(--text-2);margin-top:.8rem;text-align:center}
+.guest-estimate{font-size:.85rem;font-weight:700;color:var(--blue-dark);background:var(--blue-soft);border:1px solid var(--blue);border-radius:10px;padding:.6rem .8rem;margin-top:.9rem;text-align:center}
+[data-theme="dark"] .guest-estimate{color:var(--blue-dark)}
 .guest-ok{text-align:center;padding:1.5rem 1rem}
 .guest-ok .big-ok{font-size:3rem;color:var(--blue);font-weight:800}
 
@@ -167,7 +170,6 @@ img.qr,canvas.qr{display:block;margin:0 auto;background:#fff;border-radius:4px;m
 
 /* ============ ANTRIAN PRINT ============ */
 .print-card{border:1px solid var(--border);border-left:4px solid var(--blue);border-radius:12px;padding:.9rem 1rem;margin-bottom:.7rem;background:var(--card);display:grid;grid-template-columns:auto 1fr auto;gap:.8rem;align-items:center}
-.print-card.selesai{border-left-color:var(--blue-dark);opacity:.75}
 .print-card.diproses{border-left-color:var(--blue)}
 .print-ico{width:42px;height:42px;border-radius:10px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;font-weight:800;font-size:.75rem;flex:none}
 .print-info .fn{font-weight:700;font-size:.92rem}
@@ -336,13 +338,27 @@ img.qr,canvas.qr{display:block;margin:0 auto;background:#fff;border-radius:4px;m
       <input type="text" id="guestNama" placeholder="Contoh: Budi">
     </div>
     <div class="guest-field">
+      <label>Jenis Cetak</label>
+      <select id="guestJenis" onchange="updateGuestEstimate()">
+        <option id="optBW" value="Hitam Putih">Hitam Putih</option>
+        <option id="optColor" value="Warna">Warna</option>
+      </select>
+    </div>
+    <div class="guest-field">
+      <label>Jumlah Halaman</label>
+      <input type="number" id="guestHalaman" min="1" value="1" oninput="updateGuestEstimate()">
+      <p class="guest-note" id="halamanInfo" style="text-align:left;margin-top:.3rem">PDF terdeteksi otomatis; gambar = 1 halaman; Word diisi manual.</p>
+    </div>
+    <div class="guest-field">
       <label>Jumlah Copy</label>
-      <input type="number" id="guestJumlah" min="1" value="1">
+      <input type="number" id="guestJumlah" min="1" value="1" oninput="updateGuestEstimate()">
     </div>
     <div class="guest-field">
       <label>Catatan (opsional)</label>
-      <textarea id="guestCatatan" placeholder="Contoh: cetak warna, dijilid, dll (maks 200 karakter)"></textarea>
+      <textarea id="guestCatatan" placeholder="Contoh: dijilid, bolak-balik, dll (maks 200 karakter)"></textarea>
     </div>
+
+    <div class="guest-estimate" id="guestEstimate">Perkiraan biaya: -</div>
 
     <button class="btn btn-blue btn-block" style="margin-top:1.1rem" onclick="submitGuestPrint()" id="btnGuestSend">Kirim File</button>
     <p class="guest-note">File akan masuk ke antrian kasir Toga Mas. Tunjukkan ID antrian saat mengambil hasil cetak.</p>
@@ -447,7 +463,7 @@ img.qr,canvas.qr{display:block;margin:0 auto;background:#fff;border-radius:4px;m
   <section class="page" id="page-antrian">
     <div class="card">
       <div class="card-title">Antrian Print Pelanggan</div>
-      <p class="card-sub">File yang dikirim pelanggan via QR Code muncul di sini. Klik Selesai setelah mencetak: antrian terhapus dan transaksi print otomatis masuk ke kasir.</p>
+      <p class="card-sub">File yang dikirim pelanggan via QR Code muncul di sini. Klik Selesai setelah mencetak: antrian terhapus dan transaksi print otomatis masuk ke kasir sesuai jenis cetak dan jumlah halaman.</p>
 
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.1rem">
         <button class="btn btn-blue" onclick="loadAntrian()">Muat Ulang</button>
@@ -680,7 +696,12 @@ const TEAM = [
    KONFIGURASI DATABASE & URL
    ========================================================= */
 /* Isi SCRIPT_URL dengan URL Web App Apps Script Anda (berakhiran /exec). */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5FzcNlszVp9iS8F32DLOPvk1hxNeA6_r1dJppr5E9rXnMi-u7zGD29mgNmsoJmnotJA/exec';
+const SCRIPT_URL = '';
+
+/* Worker pdf.js untuk deteksi jumlah halaman PDF */
+if(window.pdfjsLib){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+}
 
 let barang = load('tm_barang') || structuredClone(DEFAULT_BARANG);
 let transaksi = load('tm_transaksi') || structuredClone(DEFAULT_TRX);
@@ -717,6 +738,26 @@ const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
    UPLOAD FILE DARI PELANGGAN (mode=print)
    ========================================================= */
 let guestFileObj = null;
+
+/* Harga per halaman mengikuti barang JSA002 (hitam putih) / JSA003 (warna) */
+function guestRate(jenis){
+  const kode = jenis==='Warna' ? 'JSA003' : 'JSA002';
+  const b = barang.find(x=>x.kode===kode);
+  return b ? (Number(b.harga)||0) : (jenis==='Warna'?2500:1000);
+}
+function setGuestPrices(){
+  document.getElementById('optBW').textContent = 'Hitam Putih ('+rp(guestRate('Hitam Putih'))+' / halaman)';
+  document.getElementById('optColor').textContent = 'Warna ('+rp(guestRate('Warna'))+' / halaman)';
+}
+function updateGuestEstimate(){
+  const jenis = document.getElementById('guestJenis').value;
+  const hal = Math.max(1, parseInt(document.getElementById('guestHalaman').value)||1);
+  const copy = Math.max(1, parseInt(document.getElementById('guestJumlah').value)||1);
+  const rate = guestRate(jenis);
+  document.getElementById('guestEstimate').textContent =
+    'Perkiraan biaya: '+hal+' halaman x '+copy+' copy x '+rp(rate)+' = '+rp(hal*copy*rate);
+}
+
 document.getElementById('guestFile').addEventListener('change', function(e){
   const f = e.target.files[0];
   if(!f){ clearGuestFile(); return; }
@@ -725,11 +766,42 @@ document.getElementById('guestFile').addEventListener('change', function(e){
   document.getElementById('guestFileName').textContent = f.name;
   document.getElementById('guestFileSize').textContent = (f.size/1024).toFixed(1)+' KB';
   document.getElementById('guestFileChip').style.display = 'flex';
+  detectPages(f);
+  updateGuestEstimate();
 });
 function clearGuestFile(){
   guestFileObj = null;
   document.getElementById('guestFile').value = '';
   document.getElementById('guestFileChip').style.display = 'none';
+}
+/* Deteksi jumlah halaman: PDF otomatis (pdf.js), gambar = 1, lainnya manual */
+function detectPages(f){
+  const info = document.getElementById('halamanInfo');
+  const isPdf = (f.type==='application/pdf') || /\.pdf$/i.test(f.name);
+  const isImg = /^image\//.test(f.type);
+  if(isImg){
+    document.getElementById('guestHalaman').value = 1;
+    info.textContent = 'Gambar dihitung 1 halaman.';
+    return;
+  }
+  if(!isPdf){
+    info.textContent = 'File Word tidak bisa dideteksi otomatis - isi jumlah halaman secara manual.';
+    return;
+  }
+  if(typeof pdfjsLib === 'undefined'){
+    info.textContent = 'Pendeteksi PDF tidak tersedia - isi jumlah halaman manual.';
+    return;
+  }
+  info.textContent = 'Mendeteksi jumlah halaman PDF...';
+  f.arrayBuffer().then(function(buf){
+    return pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+  }).then(function(pdf){
+    document.getElementById('guestHalaman').value = pdf.numPages;
+    info.textContent = 'PDF terdeteksi '+pdf.numPages+' halaman (bisa dikoreksi manual).';
+    updateGuestEstimate();
+  }).catch(function(){
+    info.textContent = 'Gagal membaca PDF - isi jumlah halaman manual.';
+  });
 }
 function fileToBase64(file){
   return new Promise(function(resolve,reject){
@@ -748,6 +820,8 @@ async function submitGuestPrint(){
     const payload = {
       action: 'uploadPrint',
       nama: document.getElementById('guestNama').value.trim() || 'Pelanggan',
+      jenis: document.getElementById('guestJenis').value,
+      halaman: Math.max(1, parseInt(document.getElementById('guestHalaman').value)||1),
       jumlah: parseInt(document.getElementById('guestJumlah').value)||1,
       catatan: document.getElementById('guestCatatan').value.trim(),
       file: { name: guestFileObj.name, type: guestFileObj.type, base64: base64 }
@@ -770,6 +844,7 @@ async function submitGuestPrint(){
         nama_pelanggan:payload.nama, nama_file:payload.file.name, tipe_file:payload.file.type,
         ukuran_kb:Math.round(guestFileObj.size/1024), jumlah_copy:payload.jumlah,
         catatan:payload.catatan, status:'Menunggu', url_drive:'', file_id:'',
+        jenis_cetak:payload.jenis, jumlah_halaman:payload.halaman,
         base64: base64
       });
       localStorage.setItem('tm_antrian', JSON.stringify(antrian));
@@ -872,6 +947,7 @@ function sheetPull(cb){
 }
 function refreshAll(){
   renderKasirSelect(); renderCart(); renderHistory();
+  setGuestPrices(); updateGuestEstimate();
   const act = (document.querySelector('.page.active')||{id:'page-beranda'}).id.replace('page-','');
   if(act==='laporan') renderLaporan();
   if(act==='dss') renderDSS();
@@ -914,7 +990,6 @@ async function loadAntrian(){
 function renderAntrian(){
   const list = document.getElementById('antrianList');
   const badge = document.getElementById('antrianBadge');
-  /* Entri berstatus Selesai / Dihapus tidak ditampilkan lagi */
   const visible = antrianData.filter(function(a){
     const s = a.status || 'Menunggu';
     return s !== 'Selesai' && s !== 'Dihapus';
@@ -935,6 +1010,8 @@ function renderAntrian(){
   list.innerHTML = sorted.map(a=>{
     const cls = (a.status||'')==='Diproses'?'diproses':'';
     const ext = (a.nama_file||'').split('.').pop().toUpperCase().substring(0,4);
+    const jenis = a.jenis_cetak || 'Hitam Putih';
+    const halaman = Math.max(1, parseInt(a.jumlah_halaman)||1);
     const acts = a.url_drive
       ? '<a class="btn btn-blue btn-sm" href="'+esc(a.url_drive)+'" target="_blank">Buka File</a>'
       : (a.base64 ? '<a class="btn btn-blue btn-sm" href="data:'+(a.tipe_file||'application/octet-stream')+';base64,'+a.base64+'" download="'+esc(a.nama_file||'file')+'">Download</a>' : '<span style="font-size:.75rem;color:var(--text-2)">File tidak tersedia</span>');
@@ -942,7 +1019,7 @@ function renderAntrian(){
       '<div class="print-ico">'+esc(ext)+'</div>'+
       '<div class="print-info">'+
         '<div class="fn">'+esc(a.nama_file||'-')+'</div>'+
-        '<div class="meta">'+esc(a.nama_pelanggan||'Pelanggan')+' - '+(a.tanggal||'')+' '+(a.jam||'')+' - '+(a.ukuran_kb||0)+' KB - Copy: '+(a.jumlah_copy||1)+'</div>'+
+        '<div class="meta">'+esc(a.nama_pelanggan||'Pelanggan')+' - '+(a.tanggal||'')+' '+(a.jam||'')+' - '+jenis+' - '+halaman+' halaman - Copy: '+(a.jumlah_copy||1)+'</div>'+
         (a.catatan?'<div class="cat">Catatan: '+esc(a.catatan)+'</div>':'')+
         '<div class="meta" style="font-family:monospace">ID: '+esc(a.id||'-')+'</div>'+
       '</div>'+
@@ -957,24 +1034,26 @@ function renderAntrian(){
     '</div>';
   }).join('');
 }
-/* Selesai: antrian terhapus otomatis + transaksi print masuk ke kasir */
+/* Selesai: antrian terhapus + transaksi print masuk kasir sesuai jenis cetak & halaman */
 async function selesaiAntrian(id){
   const a = antrianData.find(x=>x.id===id);
   if(!a){ toast('Antrian tidak ditemukan','err'); return; }
-  if(!confirm('Selesaikan antrian '+id+'? Antrian akan terhapus dan transaksi print masuk ke kasir.')) return;
-  /* 1) Catat transaksi ke kasir (harga per copy mengikuti Jasa Print Dokumen JSA002) */
-  const jasa = barang.find(b=>b.kode==='JSA002') || {kode:'JSA002',nama:'Jasa Print Dokumen',harga:1000};
-  const jumlah = Math.max(1, parseInt(a.jumlah_copy)||1);
-  const harga = Number(jasa.harga)||1000;
-  const subtotal = jumlah * harga;
+  const jenis = a.jenis_cetak || 'Hitam Putih';
+  const halaman = Math.max(1, parseInt(a.jumlah_halaman)||1);
+  const copy = Math.max(1, parseInt(a.jumlah_copy)||1);
+  const lembar = halaman * copy;
+  const kodeJasa = jenis==='Warna' ? 'JSA003' : 'JSA002';
+  const jasa = barang.find(b=>b.kode===kodeJasa) || {kode:kodeJasa, nama:(jenis==='Warna'?'Jasa Print Warna A4':'Jasa Print Dokumen'), harga:(jenis==='Warna'?2500:1000)};
+  const harga = Number(jasa.harga)||0;
+  const subtotal = lembar * harga;
+  if(!confirm('Selesaikan antrian '+id+'?\n'+jenis+' - '+halaman+' halaman x '+copy+' copy = '+lembar+' lembar x '+rp(harga)+' = '+rp(subtotal)+'\nAntrian terhapus dan transaksi masuk ke kasir.')) return;
   const trxId = 'TRX'+String(trxCounter++).padStart(3,'0');
   const jam = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
   transaksi.push({id:trxId,tanggal:TODAY,total:subtotal,jam:jam});
   const nextId = detailTransaksi.reduce((m,d)=>Math.max(m,d.id),0)+1;
-  detailTransaksi.push({id:nextId,id_transaksi:trxId,kode_barang:jasa.kode,jumlah:jumlah,harga:harga,subtotal:subtotal});
+  detailTransaksi.push({id:nextId,id_transaksi:trxId,kode_barang:jasa.kode,jumlah:lembar,harga:harga,subtotal:subtotal});
   save();
   renderHistory();
-  /* 2) Hapus antrian */
   try{
     if(SCRIPT_URL){
       await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'updateAntrian',id:id,status:'Selesai'})}).then(r=>r.json());
@@ -1550,6 +1629,8 @@ renderTeam();
 renderKasirSelect();
 renderCart();
 renderHistory();
+setGuestPrices();
+updateGuestEstimate();
 updateDbBadge();
 sheetPull(function(ok){
   if(SCRIPT_URL){
