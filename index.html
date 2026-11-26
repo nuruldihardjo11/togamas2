@@ -777,8 +777,17 @@ function startPhoneScanner(){
     const fmt = PHONE_FORMATS.filter(f=>Html5QrcodeSupportedFormats[f]!==undefined).map(f=>Html5QrcodeSupportedFormats[f]);
     phoneScanner = new Html5Qrcode('scanReader', fmt.length ? {formatsToSupport:fmt, verbose:false} : {verbose:false});
   }catch(e){ phoneScanner = new Html5Qrcode('scanReader'); }
-  phoneScanner.start({facingMode:phoneFacing},{fps:10,qrbox:{width:240,height:150}},onPhoneScan,function(){})
-  .catch(function(err){
+  phoneScanner.start(
+    { facingMode: phoneFacing },
+    {
+      fps: 15,
+      qrbox: function(vw, vh){ return { width: Math.floor(vw*0.92), height: Math.floor(vh*0.6) }; },
+      disableFlip: false,
+      videoConstraints: { facingMode: phoneFacing, focusMode: 'continuous' }
+    },
+    onPhoneScan,
+    function(){}
+  ).catch(function(err){
     phoneScanner = null;
     errEl.textContent = 'Kamera tidak dapat diakses. Izinkan akses kamera dan pastikan halaman dibuka via https.';
   });
@@ -852,8 +861,20 @@ async function pullScans(){
   }
 }
 function applyRemoteScan(code){
-  const b = findBarang(code);
-  if(!b){ toast('Scan HP: kode tidak dikenali ('+String(code).substring(0,18)+')','err'); return; }
+  const clean = String(code||'').trim();
+  const b = findBarang(clean);
+  if(!b){
+    if(/^\d{8,13}$/.test(clean) && confirm('Kode '+clean+' belum terdaftar di data barang.\nDaftarkan sebagai barang baru sekarang?')){
+      openBarangModal(-1);
+      document.getElementById('inputTipe').value = 'BARCODE';
+      document.getElementById('inputBarcode').value = clean;
+      renderPreview();
+      toast('Lengkapi nama, kategori, harga, lalu Simpan');
+    }else{
+      toast('Scan HP: kode tidak dikenali ('+clean.substring(0,18)+')','err');
+    }
+    return;
+  }
   pushCart(b,1);
   const box = document.getElementById('lastScan');
   box.classList.add('show');
