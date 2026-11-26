@@ -415,7 +415,7 @@ img.qr,canvas.qr{display:block;margin:0 auto;background:#fff;border-radius:4px;m
   <section class="page" id="page-kasir">
     <div class="card">
       <div class="card-title">Kasir Digital - TPS</div>
-      <p class="card-sub">Transaction Processing System. Pindai barcode atau QR Code dengan kamera maupun alat scanner, total dihitung otomatis, dan stok berkurang saat checkout.</p>
+      <p class="card-sub">Transaction Processing System. Pindai barcode atau QR Code dengan kamera maupun alat scanner, total dihitung otomatis, dan stok berkurang saat checkout. Pesanan print dari antrian juga masuk ke keranjang ini.</p>
 
       <div class="split">
         <div>
@@ -463,7 +463,7 @@ img.qr,canvas.qr{display:block;margin:0 auto;background:#fff;border-radius:4px;m
   <section class="page" id="page-antrian">
     <div class="card">
       <div class="card-title">Antrian Print Pelanggan</div>
-      <p class="card-sub">File yang dikirim pelanggan via QR Code muncul di sini. Klik Selesai setelah mencetak: antrian terhapus dan transaksi print otomatis masuk ke kasir sesuai jenis cetak dan jumlah halaman.</p>
+      <p class="card-sub">File yang dikirim pelanggan via QR Code muncul di sini. Klik Selesai untuk memasukkan pesanan print ke keranjang kasir, lalu lakukan checkout di halaman Kasir untuk mencatat transaksi.</p>
 
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.1rem">
         <button class="btn btn-blue" onclick="loadAntrian()">Muat Ulang</button>
@@ -696,7 +696,7 @@ const TEAM = [
    KONFIGURASI DATABASE & URL
    ========================================================= */
 /* Isi SCRIPT_URL dengan URL Web App Apps Script Anda (berakhiran /exec). */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5FzcNlszVp9iS8F32DLOPvk1hxNeA6_r1dJppr5E9rXnMi-u7zGD29mgNmsoJmnotJA/exec';
+const SCRIPT_URL = '';
 
 /* Worker pdf.js untuk deteksi jumlah halaman PDF */
 if(window.pdfjsLib){
@@ -718,6 +718,7 @@ function saveLocal(){
 function save(){ saveLocal(); sheetPush(); updateDbBadge(); }
 const rp = n => 'Rp ' + Number(n||0).toLocaleString('id-ID');
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cartTotalValue = () => cart.reduce((s,c)=>s+c.subtotal,0);
 
 /* =========================================================
    DETEKSI MODE TAMU (mode=print di URL)
@@ -739,7 +740,6 @@ const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
    ========================================================= */
 let guestFileObj = null;
 
-/* Harga per halaman mengikuti barang JSA002 (hitam putih) / JSA003 (warna) */
 function guestRate(jenis){
   const kode = jenis==='Warna' ? 'JSA003' : 'JSA002';
   const b = barang.find(x=>x.kode===kode);
@@ -774,7 +774,6 @@ function clearGuestFile(){
   document.getElementById('guestFile').value = '';
   document.getElementById('guestFileChip').style.display = 'none';
 }
-/* Deteksi jumlah halaman: PDF otomatis (pdf.js), gambar = 1, lainnya manual */
 function detectPages(f){
   const info = document.getElementById('halamanInfo');
   const isPdf = (f.type==='application/pdf') || /\.pdf$/i.test(f.name);
@@ -1034,7 +1033,7 @@ function renderAntrian(){
     '</div>';
   }).join('');
 }
-/* Selesai: antrian terhapus + transaksi print masuk kasir sesuai jenis cetak & halaman */
+/* Selesai: pesanan print MASUK KE KERANJANG kasir (transaksi terjadi saat checkout) */
 async function selesaiAntrian(id){
   const a = antrianData.find(x=>x.id===id);
   if(!a){ toast('Antrian tidak ditemukan','err'); return; }
@@ -1046,14 +1045,19 @@ async function selesaiAntrian(id){
   const jasa = barang.find(b=>b.kode===kodeJasa) || {kode:kodeJasa, nama:(jenis==='Warna'?'Jasa Print Warna A4':'Jasa Print Dokumen'), harga:(jenis==='Warna'?2500:1000)};
   const harga = Number(jasa.harga)||0;
   const subtotal = lembar * harga;
-  if(!confirm('Selesaikan antrian '+id+'?\n'+jenis+' - '+halaman+' halaman x '+copy+' copy = '+lembar+' lembar x '+rp(harga)+' = '+rp(subtotal)+'\nAntrian terhapus dan transaksi masuk ke kasir.')) return;
-  const trxId = 'TRX'+String(trxCounter++).padStart(3,'0');
-  const jam = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-  transaksi.push({id:trxId,tanggal:TODAY,total:subtotal,jam:jam});
-  const nextId = detailTransaksi.reduce((m,d)=>Math.max(m,d.id),0)+1;
-  detailTransaksi.push({id:nextId,id_transaksi:trxId,kode_barang:jasa.kode,jumlah:lembar,harga:harga,subtotal:subtotal});
-  save();
-  renderHistory();
+  if(!confirm('Selesaikan antrian '+id+'?\n'+jenis+' - '+halaman+' halaman x '+copy+' copy = '+lembar+' lembar x '+rp(harga)+' = '+rp(subtotal)+'\nPesanan akan MASUK KE KERANJANG. Lakukan checkout di halaman Kasir untuk mencatat transaksi.')) return;
+
+  // 1) Masukkan ke keranjang sebagai baris terpisah (jangan digabung dengan item lain)
+  cart.push({
+    kode: jasa.kode,
+    nama: jasa.nama + ' (' + (a.nama_file||'file') + ')',
+    jumlah: lembar,
+    harga: harga,
+    subtotal: subtotal
+  });
+  renderCart();
+
+  // 2) Hilangkan dari daftar antrian
   try{
     if(SCRIPT_URL){
       await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'updateAntrian',id:id,status:'Selesai'})}).then(r=>r.json());
@@ -1066,14 +1070,14 @@ async function selesaiAntrian(id){
       antrianData = arr;
       renderAntrian();
     }
-    toast('Antrian '+id+' selesai. Transaksi '+trxId+' ('+rp(subtotal)+') masuk ke kasir.');
+    toast('Pesanan masuk keranjang ('+rp(subtotal)+'). Silakan checkout di halaman Kasir.');
   }catch(e){
-    toast('Transaksi tersimpan, tetapi antrian gagal diperbarui','err');
+    toast('Pesanan masuk keranjang, tetapi antrian gagal diperbarui','err');
   }
 }
-/* Hapus: antrian hilang tanpa mencatat transaksi */
+/* Hapus: antrian hilang tanpa masuk keranjang dan tanpa transaksi */
 async function hapusAntrian(id){
-  if(!confirm('Hapus antrian '+id+' tanpa mencatat transaksi?')) return;
+  if(!confirm('Hapus antrian '+id+' tanpa memasukkan ke keranjang?')) return;
   try{
     if(SCRIPT_URL){
       const res = await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'updateAntrian',id:id,status:'Dihapus'})}).then(r=>r.json());
@@ -1321,13 +1325,13 @@ function renderCart(){
       '<td><button class="btn btn-ghost btn-sm" onclick="removeFromCart('+i+')">Hapus</button></td>'+
     '</tr>').join('')
     : '<tr><td colspan="5" style="text-align:center;color:var(--text-2);padding:1.4rem">Keranjang masih kosong</td></tr>';
-  document.getElementById('cartTotal').textContent = rp(cart.reduce((s,c)=>s+c.subtotal,0));
+  document.getElementById('cartTotal').textContent = rp(cartTotalValue());
   document.getElementById('cartCount').textContent = cart.reduce((s,c)=>s+c.jumlah,0);
 }
 function updQty(i,v){ cart[i].jumlah=Math.max(1,parseInt(v)||1); cart[i].subtotal=cart[i].jumlah*cart[i].harga; renderCart() }
 function checkout(){
   if(!cart.length){ toast('Keranjang masih kosong','err'); return }
-  const total = cart.reduce((s,c)=>s+c.subtotal,0);
+  const total = cartTotalValue();
   const id = 'TRX'+String(trxCounter++).padStart(3,'0');
   const jam = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
   transaksi.push({id,tanggal:TODAY,total,jam});
