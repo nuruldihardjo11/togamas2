@@ -35,9 +35,9 @@ button,input,select,textarea{font-family:inherit}
 
 body.nav-locked .nav-restricted{display:none!important}
 
-/* ============ HALAMAN TAMU (mode=print & mode=scan) ============ */
-#guestPrintPage,#guestScanPage{display:none;min-height:100vh;background:linear-gradient(180deg,var(--blue-soft),var(--bg));padding:1.5rem 1rem}
-#guestPrintPage.show,#guestScanPage.show{display:block}
+/* ============ HALAMAN UPLOAD PELANGGAN (mode=print) ============ */
+#guestPrintPage{display:none;min-height:100vh;background:linear-gradient(180deg,var(--blue-soft),var(--bg));padding:1.5rem 1rem}
+#guestPrintPage.show{display:block}
 .guest-card{max-width:520px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.8rem 1.4rem;box-shadow:0 10px 30px rgba(0,123,255,.12)}
 .guest-card h1{font-size:1.4rem;font-weight:800;color:var(--blue);margin-bottom:.3rem}
 .guest-card .sub{color:var(--text-2);font-size:.9rem;margin-bottom:1.2rem}
@@ -60,14 +60,6 @@ body.nav-locked .nav-restricted{display:none!important}
 [data-theme="dark"] .guest-estimate{color:var(--blue-dark)}
 .guest-ok{text-align:center;padding:1.5rem 1rem}
 .guest-ok .big-ok{font-size:3rem;color:var(--blue);font-weight:800}
-.scan-view{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;padding:6px}
-#scanReader{width:100%}
-#scanReader video{width:100%;border-radius:10px;display:block}
-#scanReader__scan_region img{display:none}
-#scanReader__header_message{display:none!important}
-#scanReader__dashboard_section_csr button,#scanReader__camera_switch_button{background:var(--blue-soft)!important;color:var(--blue-dark)!important;border:1px solid var(--blue)!important;border-radius:8px!important;padding:.3rem .6rem!important;font-weight:700!important}
-.scan-last{margin-top:.9rem;background:var(--blue-soft);border:1px solid var(--blue);border-radius:10px;padding:.7rem .8rem;font-size:.88rem;font-weight:700;color:var(--blue-dark);text-align:center;min-height:44px}
-[data-theme="dark"] .scan-last{color:var(--blue-dark)}
 
 /* ============ NAVIGASI ============ */
 .navbar{background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1000}
@@ -135,10 +127,6 @@ body.nav-locked .nav-restricted{display:none!important}
 [data-theme="dark"] .scan-row input{background:var(--bg-soft)}
 .inp{padding:.75rem 1rem;border:1px solid var(--border);border-radius:11px;font-size:.9rem;background:var(--card);color:var(--text);flex:1;min-width:190px;transition:.2s}
 .inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,123,255,.12)}
-.phone-status{margin-top:.7rem;font-size:.8rem;font-weight:700;color:var(--text-2);display:flex;align-items:center;gap:.45rem}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--border);flex:none}
-.dot.live{background:var(--blue);animation:pulse 1.4s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 .last-scan{margin-top:.7rem;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:.65rem .8rem;display:none;align-items:center;gap:.8rem;flex-wrap:wrap}
 .last-scan.show{display:flex}
 .picker{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem;align-items:flex-end}
@@ -168,6 +156,17 @@ img.qr,canvas.qr{display:block;margin:0 auto;background:#fff;border-radius:4px;m
 .bc-box{background:var(--white);border:1px dashed var(--border);border-radius:10px;padding:.5rem .4rem;display:grid;place-items:center;min-height:66px;gap:.25rem}
 [data-theme="dark"] .bc-box{background:#FFFFFF;border-color:#FFFFFF}
 .bc-box svg,.bc-box img{max-width:100%}
+
+/* ============ KAMERA ============ */
+.reader-wrap{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;padding:6px}
+#reader{width:100%}
+#reader video{width:100%;border-radius:10px;display:block}
+#reader__scan_region img{display:none}
+#reader__header_message{display:none!important}
+#reader__dashboard_section_csr button,#reader__camera_switch_button{background:var(--blue-soft)!important;color:var(--blue-dark)!important;border:1px solid var(--blue)!important;border-radius:8px!important;padding:.3rem .6rem!important;font-weight:700!important}
+.scan-note{font-size:.78rem;color:var(--text-2);margin-top:.6rem}
+.scan-note.err{color:var(--blue-deep);font-weight:700}
+[data-theme="dark"] .scan-note.err{color:var(--blue-dark)}
 
 /* ============ ANTRIAN PRINT ============ */
 .print-card{border:1px solid var(--border);border-left:4px solid var(--blue);border-radius:12px;padding:.9rem 1rem;margin-bottom:.7rem;background:var(--card);display:grid;grid-template-columns:auto 1fr auto;gap:.8rem;align-items:center}
@@ -374,22 +373,6 @@ img.qr,canvas.qr{display:block;margin:0 auto;background:#fff;border-radius:4px;m
   </div>
 </div>
 
-<!-- ===================== HALAMAN SCANNER HP (mode=scan) ===================== -->
-<div id="guestScanPage">
-  <div class="guest-card">
-    <h1>Scanner Barcode</h1>
-    <p class="sub">TOGA MAS UNMUS MERAUKE - Arahkan kamera HP ke barcode barang; hasil scan langsung masuk ke kasir.</p>
-    <div class="scan-view"><div id="scanReader"></div></div>
-    <p class="scan-note err" id="scanErr"></p>
-    <div class="scan-last" id="scanLast">Menunggu scan...</div>
-    <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem">
-      <button class="btn btn-blue" style="flex:1" onclick="startPhoneScanner()">Mulai Ulang Kamera</button>
-      <button class="btn btn-ghost" style="flex:1" onclick="switchPhoneCam()">Ganti Kamera</button>
-    </div>
-    <p class="guest-note">Setiap barcode yang terbaca otomatis menambah barang di keranjang kasir komputer.</p>
-  </div>
-</div>
-
 <!-- ===================== NAVIGASI KASIR ===================== -->
 <nav class="navbar" id="mainNav">
   <div class="nav-container">
@@ -432,20 +415,16 @@ img.qr,canvas.qr{display:block;margin:0 auto;background:#fff;border-radius:4px;m
   <section class="page" id="page-kasir">
     <div class="card">
       <div class="card-title">Kasir Digital - TPS</div>
-      <p class="card-sub">Transaction Processing System. Scan barcode dilakukan lewat HP (halaman scanner); hasil scan masuk ke keranjang komputer secara realtime. Total dihitung otomatis dan stok berkurang saat checkout.</p>
+      <p class="card-sub">Transaction Processing System. Pindai barcode atau QR Code dengan kamera maupun alat scanner, total dihitung otomatis, dan stok berkurang saat checkout.</p>
 
       <div class="split">
         <div>
           <div class="scan-box">
-            <div class="scan-title">Scanner via HP (realtime)</div>
-            <div class="phone-status"><span class="dot" id="phoneDot"></span><span id="phoneStatus">Memantau scan dari HP...</span></div>
-            <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem">
-              <button class="btn btn-blue btn-sm" onclick="openPhoneQr()">QR Scanner HP</button>
-              <button class="btn btn-ghost btn-sm" onclick="copyScanLink()">Salin Link Scanner</button>
-            </div>
-            <div class="scan-row" style="margin-top:.8rem">
-              <input class="inp" type="text" id="scanInput" placeholder="Ketik kode barang manual, lalu tekan Enter" onkeydown="if(event.key==='Enter')scanAdd()">
+            <div class="scan-title">Pemindai Barcode dan QR Code</div>
+            <div class="scan-row">
+              <input class="inp" type="text" id="scanInput" placeholder="Pindai atau ketik kode barang, lalu tekan Enter" onkeydown="if(event.key==='Enter')scanAdd()">
               <button class="btn btn-blue" onclick="scanAdd()">Tambah</button>
+              <button class="btn btn-deep" onclick="openCamera()">Scan Kamera</button>
             </div>
             <div class="last-scan" id="lastScan"></div>
           </div>
@@ -622,16 +601,18 @@ img.qr,canvas.qr{display:block;margin:0 auto;background:#fff;border-radius:4px;m
   </div>
 </div>
 
-<!-- ============ MODAL QR SCANNER HP ============ -->
-<div class="overlay" id="phoneQrModal">
-  <div class="modal" style="text-align:center">
-    <h3 style="text-align:left">Buka Scanner di HP</h3>
-    <p class="card-sub" style="text-align:left">Scan QR ini dengan kamera HP untuk membuka halaman scanner. Setelah terbuka, HP berfungsi sebagai scanner barcode nirkabel untuk kasir ini.</p>
-    <div class="bc-box" style="min-height:220px"><img class="qr" id="phoneQrImg" data-qr="" data-size="200" alt="QR Scanner"></div>
-    <p class="scan-note" id="phoneQrUrl" style="word-break:break-all"></p>
-    <div class="modal-foot" style="justify-content:center">
-      <button class="btn btn-blue" onclick="copyScanLink()">Salin Link</button>
-      <button class="btn btn-ghost" onclick="closeModal('phoneQrModal')">Tutup</button>
+<!-- ============ MODAL PEMINDAI KAMERA ============ -->
+<div class="overlay" id="scanModal">
+  <div class="modal">
+    <h3>Pemindai Kamera</h3>
+    <p class="card-sub" style="margin-bottom:.8rem">Arahkan kamera ke barcode atau QR Code pada kemasan barang maupun label rak.</p>
+    <div class="reader-wrap"><div id="reader"></div></div>
+    <p class="scan-note err" id="camErr"></p>
+    <p class="scan-note">Akses kamera hanya berfungsi via https atau localhost.</p>
+    <div class="modal-foot">
+      <button class="btn btn-blue" onclick="startCam()">Mulai Ulang</button>
+      <button class="btn btn-outline" onclick="switchCam()">Ganti Kamera</button>
+      <button class="btn btn-ghost" onclick="closeModal('scanModal')">Tutup</button>
     </div>
   </div>
 </div>
@@ -717,6 +698,7 @@ const TEAM = [
 /* Isi SCRIPT_URL dengan URL Web App Apps Script Anda (berakhiran /exec). */
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5FzcNlszVp9iS8F32DLOPvk1hxNeA6_r1dJppr5E9rXnMi-u7zGD29mgNmsoJmnotJA/exec';
 
+/* Worker pdf.js untuk deteksi jumlah halaman PDF */
 if(window.pdfjsLib){
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 }
@@ -738,159 +720,26 @@ const rp = n => 'Rp ' + Number(n||0).toLocaleString('id-ID');
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* =========================================================
-   DETEKSI MODE TAMU (mode=print / mode=scan)
+   DETEKSI MODE TAMU (mode=print di URL)
    ========================================================= */
-const URL_MODE = (new URLSearchParams(location.search).get('mode')||'').toLowerCase();
 (function detectMode(){
-  if(URL_MODE === 'print'){
+  const params = new URLSearchParams(location.search);
+  if(params.get('mode') === 'print'){
     document.getElementById('guestPrintPage').classList.add('show');
-    hideMain();
+    document.getElementById('mainNav').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('mainFooter').style.display = 'none';
+    document.body.classList.remove('nav-locked');
     document.title = 'Kirim File Print - TOGA MAS';
-  }else if(URL_MODE === 'scan'){
-    document.getElementById('guestScanPage').classList.add('show');
-    hideMain();
-    document.title = 'Scanner Barcode - TOGA MAS';
-    setTimeout(startPhoneScanner, 300);
   }
 })();
-function hideMain(){
-  document.getElementById('mainNav').style.display = 'none';
-  document.getElementById('mainContent').style.display = 'none';
-  document.getElementById('mainFooter').style.display = 'none';
-  document.body.classList.remove('nav-locked');
-}
-
-/* =========================================================
-   SCANNER HP (mode=scan) - kirim hasil scan ke kasir
-   ========================================================= */
-let phoneScanner = null, phoneFacing = 'environment', scanCooldown = false;
-const PHONE_FORMATS = ['QR_CODE','EAN_13','EAN_8','CODE_128','CODE_39','CODE_93','UPC_A','UPC_E','ITF'];
-
-function startPhoneScanner(){
-  const errEl = document.getElementById('scanErr');
-  errEl.textContent = '';
-  stopPhoneScanner();
-  if(typeof Html5Qrcode === 'undefined'){ errEl.textContent = 'Pustaka pemindai gagal dimuat. Periksa koneksi internet.'; return; }
-  if(!SCRIPT_URL){ errEl.textContent = 'Database online belum diatur (SCRIPT_URL kosong). Sinkronisasi HP ke kasir membutuhkan Google Sheets.'; }
-  document.getElementById('scanReader').innerHTML = '';
-  try{
-    const fmt = PHONE_FORMATS.filter(f=>Html5QrcodeSupportedFormats[f]!==undefined).map(f=>Html5QrcodeSupportedFormats[f]);
-    phoneScanner = new Html5Qrcode('scanReader', fmt.length ? {formatsToSupport:fmt, verbose:false} : {verbose:false});
-  }catch(e){ phoneScanner = new Html5Qrcode('scanReader'); }
-  phoneScanner.start(
-    { facingMode: phoneFacing },
-    {
-      fps: 15,
-      qrbox: function(vw, vh){ return { width: Math.floor(vw*0.92), height: Math.floor(vh*0.6) }; },
-      disableFlip: false,
-      videoConstraints: { facingMode: phoneFacing, focusMode: 'continuous' }
-    },
-    onPhoneScan,
-    function(){}
-  ).catch(function(err){
-    phoneScanner = null;
-    errEl.textContent = 'Kamera tidak dapat diakses. Izinkan akses kamera dan pastikan halaman dibuka via https.';
-  });
-}
-function stopPhoneScanner(){
-  if(!phoneScanner) return;
-  const s = phoneScanner; phoneScanner = null;
-  try{ s.stop().then(function(){ try{s.clear()}catch(e){} }).catch(function(){}) }catch(e){}
-}
-function switchPhoneCam(){ phoneFacing = (phoneFacing==='environment')?'user':'environment'; startPhoneScanner(); }
-function onPhoneScan(text){
-  if(scanCooldown) return;
-  scanCooldown = true;
-  setTimeout(function(){ scanCooldown = false; }, 1200);
-  const code = String(text||'').trim();
-  document.getElementById('scanLast').textContent = 'Terkirim ke kasir: ' + code;
-  if(navigator.vibrate){ try{ navigator.vibrate(60); }catch(e){} }
-  if(SCRIPT_URL){
-    fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'pushScan',kode:code})})
-      .then(function(r){ return r.json(); })
-      .then(function(res){ if(!(res&&res.ok)) document.getElementById('scanErr').textContent='Gagal mengirim scan ke server.'; })
-      .catch(function(){ document.getElementById('scanErr').textContent='Gagal mengirim scan (jaringan).'; });
-  }else{
-    document.getElementById('scanErr').textContent='SCRIPT_URL kosong: scan tidak dapat dikirim ke kasir.';
-  }
-}
-
-/* =========================================================
-   POLLING SCAN DI KOMPUTER KASIR (realtime via Sheets)
-   ========================================================= */
-let pollTimer = null;
-function getScanLink(){ return location.origin + location.pathname + '?mode=scan'; }
-function copyScanLink(){
-  const url = getScanLink();
-  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>toast('Link scanner HP disalin: '+url)); }
-  else{ prompt('Salin link scanner ini:', url); }
-}
-function openPhoneQr(){
-  const img = document.getElementById('phoneQrImg');
-  img.dataset.qr = getScanLink();
-  document.getElementById('phoneQrUrl').textContent = getScanLink();
-  document.getElementById('phoneQrModal').classList.add('on');
-  drawQRs(document.getElementById('phoneQrModal'));
-}
-function setPhoneStatus(live,msg){
-  const dot = document.getElementById('phoneDot');
-  const txt = document.getElementById('phoneStatus');
-  if(dot) dot.className = 'dot' + (live?' live':'');
-  if(txt) txt.textContent = msg;
-}
-function startScanPolling(){
-  stopScanPolling();
-  if(!SCRIPT_URL){ setPhoneStatus(false,'Scanner HP memerlukan database online (SCRIPT_URL).'); return; }
-  setPhoneStatus(true,'Memantau scan dari HP...');
-  pollTimer = setInterval(pullScans, 1500);
-}
-function stopScanPolling(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
-async function pullScans(){
-  const kasirActive = document.getElementById('page-kasir').classList.contains('active');
-  if(!kasirActive || document.hidden) return;
-  try{
-    const res = await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'pullScan'})}).then(r=>r.json());
-    if(res && res.ok){
-      setPhoneStatus(true,'Memantau scan dari HP...');
-      (res.scans||[]).forEach(function(s){ applyRemoteScan(s.kode); });
-    }else{
-      setPhoneStatus(false,'Server scan tidak merespon benar.');
-    }
-  }catch(e){
-    setPhoneStatus(false,'Terputus dari server scan.');
-  }
-}
-function applyRemoteScan(code){
-  const clean = String(code||'').trim();
-  const b = findBarang(clean);
-  if(!b){
-    if(/^\d{8,13}$/.test(clean) && confirm('Kode '+clean+' belum terdaftar di data barang.\nDaftarkan sebagai barang baru sekarang?')){
-      openBarangModal(-1);
-      document.getElementById('inputTipe').value = 'BARCODE';
-      document.getElementById('inputBarcode').value = clean;
-      renderPreview();
-      toast('Lengkapi nama, kategori, harga, lalu Simpan');
-    }else{
-      toast('Scan HP: kode tidak dikenali ('+clean.substring(0,18)+')','err');
-    }
-    return;
-  }
-  pushCart(b,1);
-  const box = document.getElementById('lastScan');
-  box.classList.add('show');
-  box.innerHTML = '<div style="flex:1;min-width:140px">'+
-      '<div style="font-weight:800;font-size:.9rem">'+esc(b.nama)+' (dari HP)</div>'+
-      '<div style="font-size:.76rem;color:var(--text-2)">'+esc(b.kode)+' - '+rp(b.harga)+' x 1</div>'+
-    '</div>'+
-    '<div class="mini-bc">'+codeHTML(b,{size:64,h:30,w:1.2,fs:9})+'</div>';
-  drawCodes(box);
-  toast('Scan HP: '+b.nama+' masuk keranjang');
-}
 
 /* =========================================================
    UPLOAD FILE DARI PELANGGAN (mode=print)
    ========================================================= */
 let guestFileObj = null;
+
+/* Harga per halaman mengikuti barang JSA002 (hitam putih) / JSA003 (warna) */
 function guestRate(jenis){
   const kode = jenis==='Warna' ? 'JSA003' : 'JSA002';
   const b = barang.find(x=>x.kode===kode);
@@ -908,6 +757,7 @@ function updateGuestEstimate(){
   document.getElementById('guestEstimate').textContent =
     'Perkiraan biaya: '+hal+' halaman x '+copy+' copy x '+rp(rate)+' = '+rp(hal*copy*rate);
 }
+
 document.getElementById('guestFile').addEventListener('change', function(e){
   const f = e.target.files[0];
   if(!f){ clearGuestFile(); return; }
@@ -924,13 +774,24 @@ function clearGuestFile(){
   document.getElementById('guestFile').value = '';
   document.getElementById('guestFileChip').style.display = 'none';
 }
+/* Deteksi jumlah halaman: PDF otomatis (pdf.js), gambar = 1, lainnya manual */
 function detectPages(f){
   const info = document.getElementById('halamanInfo');
   const isPdf = (f.type==='application/pdf') || /\.pdf$/i.test(f.name);
   const isImg = /^image\//.test(f.type);
-  if(isImg){ document.getElementById('guestHalaman').value = 1; info.textContent = 'Gambar dihitung 1 halaman.'; return; }
-  if(!isPdf){ info.textContent = 'File Word tidak bisa dideteksi otomatis - isi jumlah halaman secara manual.'; return; }
-  if(typeof pdfjsLib === 'undefined'){ info.textContent = 'Pendeteksi PDF tidak tersedia - isi jumlah halaman manual.'; return; }
+  if(isImg){
+    document.getElementById('guestHalaman').value = 1;
+    info.textContent = 'Gambar dihitung 1 halaman.';
+    return;
+  }
+  if(!isPdf){
+    info.textContent = 'File Word tidak bisa dideteksi otomatis - isi jumlah halaman secara manual.';
+    return;
+  }
+  if(typeof pdfjsLib === 'undefined'){
+    info.textContent = 'Pendeteksi PDF tidak tersedia - isi jumlah halaman manual.';
+    return;
+  }
   info.textContent = 'Mendeteksi jumlah halaman PDF...';
   f.arrayBuffer().then(function(buf){
     return pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
@@ -938,7 +799,9 @@ function detectPages(f){
     document.getElementById('guestHalaman').value = pdf.numPages;
     info.textContent = 'PDF terdeteksi '+pdf.numPages+' halaman (bisa dikoreksi manual).';
     updateGuestEstimate();
-  }).catch(function(){ info.textContent = 'Gagal membaca PDF - isi jumlah halaman manual.'; });
+  }).catch(function(){
+    info.textContent = 'Gagal membaca PDF - isi jumlah halaman manual.';
+  });
 }
 function fileToBase64(file){
   return new Promise(function(resolve,reject){
@@ -970,7 +833,9 @@ async function submitGuestPrint(){
         document.getElementById('guestFormCard').style.display = 'none';
         document.getElementById('guestOkCard').style.display = 'block';
         clearGuestFile();
-      }else{ throw new Error(res && res.error ? res.error : 'Gagal mengirim'); }
+      }else{
+        throw new Error(res && res.error ? res.error : 'Gagal mengirim');
+      }
     }else{
       const id = 'PRT'+Date.now().toString().slice(-6);
       const antrian = load('tm_antrian') || [];
@@ -1094,11 +959,16 @@ function refreshAll(){
 /* =========================================================
    ANTRIAN PRINT
    ========================================================= */
-function getPrintQrUrl(){ return location.origin + location.pathname + '?mode=print'; }
+function getPrintQrUrl(){
+  return location.origin + location.pathname + '?mode=print';
+}
 function copyPrintQr(){
   const url = getPrintQrUrl();
-  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>toast('Link QR Print disalin: '+url)); }
-  else{ prompt('Salin link ini untuk QR Print:', url); }
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(url).then(()=>toast('Link QR Print disalin: '+url));
+  }else{
+    prompt('Salin link ini untuk QR Print:', url);
+  }
 }
 async function loadAntrian(){
   const list = document.getElementById('antrianList');
@@ -1164,6 +1034,7 @@ function renderAntrian(){
     '</div>';
   }).join('');
 }
+/* Selesai: antrian terhapus + transaksi print masuk kasir sesuai jenis cetak & halaman */
 async function selesaiAntrian(id){
   const a = antrianData.find(x=>x.id===id);
   if(!a){ toast('Antrian tidak ditemukan','err'); return; }
@@ -1200,6 +1071,7 @@ async function selesaiAntrian(id){
     toast('Transaksi tersimpan, tetapi antrian gagal diperbarui','err');
   }
 }
+/* Hapus: antrian hilang tanpa mencatat transaksi */
 async function hapusAntrian(id){
   if(!confirm('Hapus antrian '+id+' tanpa mencatat transaksi?')) return;
   try{
@@ -1251,6 +1123,9 @@ function ensureCodes(){
 }
 ensureCodes();
 
+/* =========================================================
+   RENDER KODE
+   ========================================================= */
 function drawBarcodes(scope){
   (scope||document).querySelectorAll('svg.bc').forEach(svg=>{
     const val = svg.dataset.bc;
@@ -1276,7 +1151,6 @@ function drawQRImg(img,val,size,dark){
 function drawQRs(scope){
   const dark = getComputedStyle(document.body).getPropertyValue('--bc').trim()||'#0A2540';
   (scope||document).querySelectorAll('img.qr[data-qr]').forEach(img=>{
-    if(!img.dataset.qr) return;
     drawQRImg(img, img.dataset.qr, +(img.dataset.size||96), img.dataset.pc==='1' ? '#000000' : dark);
   });
 }
@@ -1302,13 +1176,13 @@ function codeHTML(b,o){
    NAVIGASI & TEMA
    ========================================================= */
 function go(page){
+  stopCam();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('active',a.dataset.page===page));
   document.getElementById('navLinks').classList.remove('open');
   window.scrollTo({top:0,behavior:'smooth'});
-  if(page==='kasir'){ renderKasirSelect(); renderCart(); renderHistory(); startScanPolling(); setTimeout(()=>document.getElementById('scanInput').focus(),250) }
-  else{ stopScanPolling(); }
+  if(page==='kasir'){ renderKasirSelect(); renderCart(); renderHistory(); setTimeout(()=>document.getElementById('scanInput').focus(),250) }
   if(page==='laporan') renderLaporan();
   if(page==='dss') renderDSS();
   if(page==='databarang') renderDataTable();
@@ -1335,8 +1209,56 @@ function toast(msg,type){
   el.textContent=msg; el.className='show '+(type||'');
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className='',2800);
 }
-function closeModal(id){ document.getElementById(id).classList.remove('on'); }
-document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('on'); }));
+function closeModal(id){
+  if(id==='scanModal') stopCam();
+  document.getElementById(id).classList.remove('on');
+}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{
+  if(e.target===o){ if(o.id==='scanModal') stopCam(); o.classList.remove('on') }
+}));
+
+/* =========================================================
+   KAMERA
+   ========================================================= */
+let camScanner = null, camFacing = 'environment';
+const CAM_FORMATS = ['QR_CODE','EAN_13','EAN_8','CODE_128','CODE_39','CODE_93','UPC_A','UPC_E','ITF','DATA_MATRIX'];
+function openCamera(){
+  document.getElementById('camErr').textContent='';
+  document.getElementById('scanModal').classList.add('on');
+  setTimeout(startCam,180);
+}
+function startCam(){
+  const errEl = document.getElementById('camErr');
+  errEl.textContent='';
+  stopCam();
+  if(typeof Html5Qrcode === 'undefined'){ errEl.textContent='Pustaka pemindai gagal dimuat.'; return }
+  document.getElementById('reader').innerHTML='';
+  try{
+    const fmt = CAM_FORMATS.filter(f=>Html5QrcodeSupportedFormats[f]!==undefined).map(f=>Html5QrcodeSupportedFormats[f]);
+    camScanner = new Html5Qrcode('reader', fmt.length ? {formatsToSupport:fmt, verbose:false} : {verbose:false});
+  }catch(e){ camScanner = new Html5Qrcode('reader') }
+  camScanner.start({facingMode:camFacing},{fps:10,qrbox:{width:250,height:160},disableFlip:false},onCamSuccess,function(){})
+  .catch(function(err){
+    camScanner=null;
+    errEl.textContent='Kamera tidak dapat diakses. Izinkan akses kamera, atau gunakan https / localhost.';
+  });
+}
+function onCamSuccess(t){
+  stopCam();
+  document.getElementById('scanModal').classList.remove('on');
+  if(String(t).includes('mode=print')){
+    window.location.href = t;
+    return;
+  }
+  document.getElementById('scanInput').value=t; scanAdd();
+}
+function stopCam(){
+  if(!camScanner) return;
+  const s=camScanner; camScanner=null;
+  try{ s.stop().then(function(){ try{s.clear()}catch(e){} }).catch(function(){}) }catch(e){}
+}
+function switchCam(){ camFacing = (camFacing==='environment')?'user':'environment'; startCam() }
+window.addEventListener('beforeunload', stopCam);
 
 /* =========================================================
    KASIR
@@ -1356,7 +1278,7 @@ function findBarang(q){
 function scanAdd(){
   const inp = document.getElementById('scanInput');
   const b = findBarang(inp.value);
-  if(!b){ toast('Barcode atau kode barang tidak ditemukan','err'); return; }
+  if(!b){ toast('Barcode atau kode barang tidak ditemukan','err'); return }
   const qty = parseInt(document.getElementById('kasirJumlah').value)||1;
   pushCart(b,qty);
   const box = document.getElementById('lastScan');
@@ -1372,22 +1294,22 @@ function scanAdd(){
 function pushCart(b,qty){
   if(b.kategori!=='Jasa'){
     const inCart = (cart.find(c=>c.kode===b.kode)||{jumlah:0}).jumlah;
-    if(b.stok - inCart < qty){ toast('Stok '+b.nama+' tidak mencukupi, sisa '+b.stok+' unit','err'); return; }
+    if(b.stok - inCart < qty){ toast('Stok '+b.nama+' tidak mencukupi, sisa '+b.stok+' unit','err'); return }
   }
   const ex = cart.find(c=>c.kode===b.kode);
-  if(ex){ ex.jumlah+=qty; ex.subtotal=ex.jumlah*ex.harga; }
+  if(ex){ ex.jumlah+=qty; ex.subtotal=ex.jumlah*ex.harga }
   else cart.push({kode:b.kode,nama:b.nama,jumlah:qty,harga:b.harga,subtotal:b.harga*qty});
   renderCart();
 }
 function addToCart(){
   const kode = document.getElementById('kasirBarang').value;
   const qty = parseInt(document.getElementById('kasirJumlah').value)||1;
-  if(!kode){ toast('Pilih barang terlebih dahulu','err'); return; }
+  if(!kode){ toast('Pilih barang terlebih dahulu','err'); return }
   const b = barang.find(x=>x.kode===kode);
   if(b) pushCart(b,qty);
 }
-function removeFromCart(i){ cart.splice(i,1); renderCart(); }
-function clearCart(){ if(cart.length && confirm('Kosongkan keranjang?')){ cart=[]; renderCart(); } }
+function removeFromCart(i){ cart.splice(i,1); renderCart() }
+function clearCart(){ if(cart.length && confirm('Kosongkan keranjang?')){ cart=[]; renderCart() } }
 function renderCart(){
   const tb = document.getElementById('cartBody');
   tb.innerHTML = cart.length ? cart.map((c,i)=>
@@ -1402,9 +1324,9 @@ function renderCart(){
   document.getElementById('cartTotal').textContent = rp(cart.reduce((s,c)=>s+c.subtotal,0));
   document.getElementById('cartCount').textContent = cart.reduce((s,c)=>s+c.jumlah,0);
 }
-function updQty(i,v){ cart[i].jumlah=Math.max(1,parseInt(v)||1); cart[i].subtotal=cart[i].jumlah*cart[i].harga; renderCart(); }
+function updQty(i,v){ cart[i].jumlah=Math.max(1,parseInt(v)||1); cart[i].subtotal=cart[i].jumlah*cart[i].harga; renderCart() }
 function checkout(){
-  if(!cart.length){ toast('Keranjang masih kosong','err'); return; }
+  if(!cart.length){ toast('Keranjang masih kosong','err'); return }
   const total = cart.reduce((s,c)=>s+c.subtotal,0);
   const id = 'TRX'+String(trxCounter++).padStart(3,'0');
   const jam = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
@@ -1426,7 +1348,7 @@ function renderHistory(){
   document.getElementById('histSub').textContent = list.length ? list.length+' transaksi - total '+rp(tot) : 'Belum ada transaksi hari ini.';
   document.getElementById('transactionHistory').innerHTML = list.length ? list.map(t=>{
     const ds = detailTransaksi.filter(d=>d.id_transaksi===t.id);
-    const txt = ds.map(d=>{ const b=barang.find(x=>x.kode===d.kode_barang); return (b?b.nama:d.kode_barang)+' x'+d.jumlah; }).join(', ');
+    const txt = ds.map(d=>{ const b=barang.find(x=>x.kode===d.kode_barang); return (b?b.nama:d.kode_barang)+' x'+d.jumlah }).join(', ');
     return '<div class="tx">'+
       '<div class="tx-head"><span class="tx-id">'+t.id+'</span><span class="tx-time">'+t.tanggal+(t.jam?' - '+t.jam:'')+'</span></div>'+
       '<div class="tx-items">'+esc(txt)+'</div>'+
@@ -1444,7 +1366,7 @@ function openPrint(html,title){
   document.getElementById('printModal').classList.add('on');
   drawCodes(document.getElementById('printArea'));
 }
-function doPrint(){ setTimeout(function(){ window.print(); },120); }
+function doPrint(){ setTimeout(function(){ window.print() },120) }
 function labelHTML(b){
   return '<div class="lbl">'+
     '<div class="sn">TOGA MAS UNMUS</div>'+
@@ -1478,7 +1400,7 @@ function reportData(){
   const ds = detailTransaksi.filter(d=>ids.has(d.id_transaksi));
   const cats = ['Minuman','Makanan','ATK','Jasa'];
   const perCat = {}; cats.forEach(c=>perCat[c]=0);
-  ds.forEach(d=>{ const b=barang.find(x=>x.kode===d.kode_barang); if(b&&perCat[b.kategori]!==undefined) perCat[b.kategori]+=d.subtotal; });
+  ds.forEach(d=>{ const b=barang.find(x=>x.kode===d.kode_barang); if(b&&perCat[b.kategori]!==undefined) perCat[b.kategori]+=d.subtotal });
   const total = today.reduce((s,t)=>s+t.total,0);
   return {total,jmlTrx:today.length,jmlItem:ds.reduce((s,d)=>s+d.jumlah,0),
     avg:today.length?Math.round(total/today.length):0,perCat,cats,details:ds};
@@ -1512,7 +1434,7 @@ function renderLaporan(){
   });
 }
 function resetLaporan(){
-  if(!transaksi.length && !detailTransaksi.length){ toast('Laporan harian sudah kosong','err'); return; }
+  if(!transaksi.length && !detailTransaksi.length){ toast('Laporan harian sudah kosong','err'); return }
   if(confirm('Reset laporan harian? Seluruh laporan yang sudah ada akan dihapus dan pencatatan dimulai dari awal.')){
     transaksi = []; detailTransaksi = []; trxCounter = 1;
     save(); renderLaporan(); renderHistory();
@@ -1539,7 +1461,7 @@ function exportCSV(){
    ========================================================= */
 function renderDSS(){
   const sold = {};
-  detailTransaksi.forEach(d=>{ sold[d.kode_barang]=(sold[d.kode_barang]||0)+d.jumlah; });
+  detailTransaksi.forEach(d=>{ sold[d.kode_barang]=(sold[d.kode_barang]||0)+d.jumlah });
   const ranked = Object.entries(sold)
     .map(([kode,qty])=>({kode,qty,nama:(barang.find(b=>b.kode===kode)||{nama:kode}).nama}))
     .sort((a,b)=>b.qty-a.qty).slice(0,8);
@@ -1556,7 +1478,7 @@ function renderDSS(){
         '<div class="d">Kode '+b.kode+' - sisa stok '+b.stok+' unit - harga '+rp(b.harga)+'</div>'+
       '</div>').join('')
     : '<p style="color:var(--text-2);font-size:.9rem">Semua stok dalam kondisi aman, di atas 10 unit.</p>';
-  const reco = low.map(b=>{ const s=sold[b.kode]||0; return {...b,terjual:s,saran:Math.max(s*2,20)}; }).sort((a,b)=>a.stok-b.stok);
+  const reco = low.map(b=>{ const s=sold[b.kode]||0; return {...b,terjual:s,saran:Math.max(s*2,20)} }).sort((a,b)=>a.stok-b.stok);
   document.getElementById('restockReco').innerHTML = reco.length
     ? reco.map(b=>
       '<div class="reco">'+
@@ -1619,7 +1541,7 @@ function renderPreview(){
   const tipe = document.getElementById('inputTipe').value;
   const lc = getComputedStyle(document.body).getPropertyValue('--bc').trim()||'#0A2540';
   wrap.innerHTML='';
-  if(!val){ wrap.innerHTML='<span style="font-size:.8rem;color:#5A7A99">Nomor barcode atau QR Code belum diisi</span>'; return; }
+  if(!val){ wrap.innerHTML='<span style="font-size:.8rem;color:#5A7A99">Nomor barcode atau QR Code belum diisi</span>'; return }
   if(tipe==='QR'){
     const img = document.createElement('img');
     img.className='qr'; wrap.appendChild(img);
@@ -1649,7 +1571,7 @@ function onTipeChange(){
   if(tipe==='BARCODE' && !/^\d+$/.test(cur)) document.getElementById('inputBarcode').value = genBarcode(kode+'_'+Date.now());
   renderPreview();
 }
-function onKodeChange(){ const inp=document.getElementById('inputBarcode'); if(!inp.value.trim()) regenCode(); }
+function onKodeChange(){ const inp=document.getElementById('inputBarcode'); if(!inp.value.trim()) regenCode() }
 function saveBarang(){
   const idx = parseInt(document.getElementById('editIndex').value);
   const kode = document.getElementById('inputKode').value.trim().toUpperCase();
@@ -1659,11 +1581,11 @@ function saveBarang(){
   let stok = parseInt(document.getElementById('inputStok').value)||0;
   const tipeKode = document.getElementById('inputTipe').value;
   let barcode = document.getElementById('inputBarcode').value.trim();
-  if(!kode||!nama){ toast('Kode dan nama wajib diisi','err'); return; }
-  if(harga<=0){ toast('Harga harus lebih dari nol','err'); return; }
-  if(barang.some((b,i)=>b.kode===kode && i!==idx)){ toast('Kode barang sudah dipakai','err'); return; }
+  if(!kode||!nama){ toast('Kode dan nama wajib diisi','err'); return }
+  if(harga<=0){ toast('Harga harus lebih dari nol','err'); return }
+  if(barang.some((b,i)=>b.kode===kode && i!==idx)){ toast('Kode barang sudah dipakai','err'); return }
   if(!barcode) barcode = tipeKode==='QR' ? genQR(kode) : genBarcode(kode+'_'+Date.now());
-  if(barang.some((b,i)=>String(b.barcode).toLowerCase()===barcode.toLowerCase() && i!==idx)){ toast('Nomor barcode atau QR sudah dipakai barang lain','err'); return; }
+  if(barang.some((b,i)=>String(b.barcode).toLowerCase()===barcode.toLowerCase() && i!==idx)){ toast('Nomor barcode atau QR sudah dipakai barang lain','err'); return }
   if(kategori==='Jasa') stok = 9999;
   if(idx>=0) barang[idx] = {kode,nama,kategori,harga,stok,barcode,tipeKode};
   else barang.push({kode,nama,kategori,harga,stok,barcode,tipeKode});
@@ -1671,7 +1593,7 @@ function saveBarang(){
   toast(idx>=0?'Data barang diperbarui':'Barang berhasil ditambahkan');
 }
 function deleteBarang(i){
-  if(confirm('Hapus barang "'+barang[i].nama+'"?')){ barang.splice(i,1); save(); renderDataTable(); toast('Barang telah dihapus'); }
+  if(confirm('Hapus barang "'+barang[i].nama+'"?')){ barang.splice(i,1); save(); renderDataTable(); toast('Barang telah dihapus') }
 }
 function resetData(){
   if(confirm('Kembalikan seluruh data ke data awal? Transaksi baru akan dihapus.')){
@@ -1718,7 +1640,6 @@ sheetPull(function(ok){
   refreshAll();
   updateDbBadge();
 });
-window.addEventListener('beforeunload', function(){ stopPhoneScanner(); stopScanPolling(); });
 </script>
 </body>
 </html>
